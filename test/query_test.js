@@ -77,17 +77,16 @@ describe('query', () => {
   })
 
   it('map', async function() {
-    await assertQuery(query.map(a => query.multiply([2, a]), [1, 2, 3]), [2, 4, 6])
+    await assertQuery(query.map([1, 2, 3], a => query.multiply([2, a])), [2, 4, 6])
 
     const page = query.paginate(nSet(1))
-    const ns = query.map(a => query.select(['data', 'n'], query.get(a)), page)
+    const ns = query.map(page, a => query.select(['data', 'n'], query.get(a)))
     assert.deepEqual((await client.query(ns)).data, [1, 1])
   })
 
   it('foreach', async function() {
     const refs = [(await create()).ref, (await create()).ref]
-    await client.query(
-      query.foreach(query.delete_expr, refs))
+    await client.query(query.foreach(refs, query.delete_expr))
     for (const ref of refs)
       await assertQuery(query.exists(ref), false)
   })
