@@ -92,6 +92,18 @@ describe('query', () => {
       await assertQuery(query.exists(ref), false)
   })
 
+  it('prepend', async function() {
+    await assertQuery(query.prepend([1, 2, 3], [4, 5, 6]), [1, 2, 3, 4, 5, 6])
+    // Fails for non-array.
+    await assertBadQuery(query.prepend([1, 2], 'foo'))
+  })
+
+  it('append', async function() {
+    await assertQuery(query.append([4, 5, 6], [1, 2, 3]), [1, 2, 3, 4, 5, 6])
+    // Fails for non-array.
+    await assertBadQuery(query.append([1, 2], 'foo'))
+  })
+
   it('get', async function() {
     const instance = await create()
     await assertQuery(query.get(instance.ref), instance)
@@ -193,6 +205,7 @@ describe('query', () => {
   it('concat', async function() {
     await assertQuery(query.concat('a', 'b', 'c'), 'abc')
     await assertQuery(query.concat(), '')
+    await assertQuery(query.concatWithSeparator('.', 'a', 'b', 'c'), 'a.b.c')
   })
 
   it('contains', async function() {
@@ -240,6 +253,36 @@ describe('query', () => {
     await assertBadQuery(query.divide())
   })
 
+  it('modulo', async function() {
+    await assertQuery(query.modulo(5, 2), 1)
+    // This is (15 % 10) % 2
+    await assertQuery(query.modulo(15, 10, 2), 1)
+    await assertQuery(query.modulo(2), 2)
+    await assertBadQuery(query.modulo(1, 0))
+    await assertBadQuery(query.modulo())
+  })
+
+  it('and', async function() {
+    await assertQuery(query.and(true, true, false), false)
+    await assertQuery(query.and(true, true, true), true)
+    await assertQuery(query.and(true), true)
+    await assertQuery(query.and(false), false)
+    await assertBadQuery(query.and())
+  })
+
+  it('or', async function() {
+    await assertQuery(query.or(false, false, true), true)
+    await assertQuery(query.or(false, false, false), false)
+    await assertQuery(query.or(true), true)
+    await assertQuery(query.or(false), false)
+    await assertBadQuery(query.or())
+  })
+
+  it('not', async function() {
+    await assertQuery(query.not(true), false)
+    await assertQuery(query.not(false), true)
+  })
+
   it('varargs', async function() {
     // Works for lists too
     await assertQuery(query.add([2, 3, 5]), 10)
@@ -248,22 +291,23 @@ describe('query', () => {
   })
 })
 
-const
-  create = (data={}) => {
-    if (data.n === undefined)
-      data.n = 0
-    return client.query(query.create(class_ref, query.quote({data})))
-  },
-  nSet = n =>
-    query.match(n, nIndexRef),
-  mSet = m =>
-    query.match(m, mIndexRef)
+function create(data={}) {
+  if (data.n === undefined)
+    data.n = 0
+  return client.query(query.create(class_ref, query.quote({data})))
+}
+function nSet(n) {
+  return query.match(n, nIndexRef)
+}
+function mSet(m) {
+  return query.match(m, mIndexRef)
+}
 
 async function assertQuery(query, expected) {
   assert.deepEqual(await client.query(query), expected)
 }
 async function assertBadQuery(query, errorType=BadRequest) {
-  assertRejected(client.query(query), errorType)
+  await assertRejected(client.query(query), errorType)
 }
 async function assertSet(set, expected) {
   assert.deepEqual(await getSetContents(set), expected)

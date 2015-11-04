@@ -76,6 +76,16 @@ export function foreach(lambda_expr, collection) {
   return {foreach: toLambda(lambda_expr), collection}
 }
 
+/** See the [docs](https://faunadb.com/documentation/queries#collection_functions). */
+export function prepend(elems, collection) {
+  return {prepend: elems, collection}
+}
+
+/** See the [docs](https://faunadb.com/documentation/queries#collection_functions). */
+export function append(elems, collection) {
+  return {append: elems, collection}
+}
+
 /** See the [docs](https://faunadb.com/documentation/queries#read_functions). */
 export function get(ref, ts=null) {
   return params({get: ref}, {ts})
@@ -155,6 +165,11 @@ export function concat(...strings) {
 }
 
 /** See the [docs](https://faunadb.com/documentation/queries#misc_functions). */
+export function concatWithSeparator(separator, ...strings) {
+  return {concat: oneOrMany(strings), separator}
+}
+
+/** See the [docs](https://faunadb.com/documentation/queries#misc_functions). */
 export function contains(path, value) {
   return {contains: path, in: value}
 }
@@ -189,6 +204,26 @@ export function divide(...numbers) {
   return varargsQuery('divide', numbers)
 }
 
+/** See the [docs](https://faunadb.com/documentation/queries#misc_functions). */
+export function modulo(...numbers) {
+  return varargsQuery('modulo', numbers)
+}
+
+/** See the [docs](https://faunadb.com/documentation/queries#misc_functions). */
+export function and(...booleans) {
+  return varargsQuery('and', booleans)
+}
+
+/** See the [docs](https://faunadb.com/documentation/queries#misc_functions). */
+export function or(...booleans) {
+  return varargsQuery('or', booleans)
+}
+
+/** See the [docs](https://faunadb.com/documentation/queries#misc_functions). */
+export function not(boolean) {
+  return {not: boolean}
+}
+
 function params(mainParams, optionalParams) {
   for (const key in optionalParams) {
     const val = optionalParams[key]
@@ -198,6 +233,15 @@ function params(mainParams, optionalParams) {
   return mainParams
 }
 
+/**
+ * Call name with varargs.
+ * This ensures that a single value passed is not put in an array, so
+ * `query.add([1, 2])` will work as well as `query.add(1, 2)`.
+ */
 function varargsQuery(name, values) {
-  return {[name]: values.length === 1 ? values[0] : values}
+  return {[name]: oneOrMany(values)}
+}
+
+function oneOrMany(values) {
+  return values.length === 1 ? values[0] : values
 }

@@ -44,10 +44,10 @@ export async function assertRejected(promise, errorType) {
     await promise
     succeeded = true
   } catch (error) {
-    assert(error instanceof errorType)
+    assert(error instanceof errorType, `Expected error to be a ${errorType.name}, got: ${error}`)
   }
-  if (succeeded)
-    assert.fail('Expected promise to fail')
+
+  assert(!succeeded, 'Expected promise to fail.')
 }
 
 // Set in before hook, so won't be null during tests
